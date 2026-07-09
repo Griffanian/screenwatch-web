@@ -20,5 +20,7 @@ services:
         value: "918842319149244"
       - key: CLOUDINARY_API_SECRET
         sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
       - key: PYTHON_VERSION
         value: "3.12.3"

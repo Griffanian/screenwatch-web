@@ -1,4 +1,6 @@
 import json
+import logging
+import threading
 from datetime import timedelta
 
 from django.conf import settings
@@ -10,7 +12,12 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 
-from .models import Capture
+from .models import Capture, ActivitySummary, Project
+
+logger = logging.getLogger(__name__)
+
+_analysis_counter = 0
+_ANALYSIS_EVERY = 20  # run analysis every N captures
 
 
 def _check_api_key(request):
@@ -55,7 +62,24 @@ def api_capture(request):
         capture.image = image
     capture.save()
 
+    # Trigger analysis every N captures (in background thread to avoid blocking)
+    global _analysis_counter
+    _analysis_counter += 1
+    if _analysis_counter >= _ANALYSIS_EVERY:
+        _analysis_counter = 0
+        threading.Thread(target=_run_analysis, daemon=True).start()
+
     return JsonResponse({"ok": True, "id": str(capture.id)}, status=201)
+
+
+def _run_analysis():
+    try:
+        from .analysis import analyse_unprocessed
+        count = analyse_unprocessed()
+        if count:
+            logger.info("Analysed %d activity blocks", count)
+    except Exception:
+        logger.exception("Background analysis failed")
 
 
 @csrf_exempt
@@ -173,10 +197,52 @@ def dashboard(request):
     prev_day = (day - timedelta(days=1)).isoformat()
     next_day = (day + timedelta(days=1)).isoformat()
 
+    # Project breakdowns from analysed activity summaries
+    activities = (
+        ActivitySummary.objects
+        .filter(start_time__gte=day_start, start_time__lt=day_end)
+        .select_related("project")
+        .order_by("start_time")
+    )
+
+    project_totals = {}
+    for a in activities:
+        name = a.project.name if a.project else "Uncategorised"
+        project_totals[name] = project_totals.get(name, 0) + a.duration_secs
+    project_totals_sorted = sorted(project_totals.items(), key=lambda x: -x[1])
+    project_max = project_totals_sorted[0][1] if project_totals_sorted else 1
+    project_totals_display = [
+        {
+            "project": name,
+            "secs": secs,
+            "pct": max(int(secs / project_max * 100), 3),
+            "display": f"{secs // 3600}h {(secs % 3600) // 60}m" if secs >= 3600 else f"{secs // 60}m {secs % 60}s",
+        }
+        for name, secs in project_totals_sorted
+    ]
+
+    # Activity timeline (analysed blocks with descriptions)
+    activity_timeline = [
+        {
+            "project": a.project.name if a.project else "Uncategorised",
+            "description": a.description,
+            "start": a.start_time,
+            "end": a.end_time,
+            "duration_display": (
+                f"{a.duration_secs // 60}m {a.duration_secs % 60}s"
+                if a.duration_secs >= 60
+                else f"{a.duration_secs}s"
+            ),
+        }
+        for a in activities
+    ]
+
     return render(request, "captures/dashboard.html", {
         "day": day,
         "blocks": blocks,
         "app_totals": app_totals_display,
+        "project_totals": project_totals_display,
+        "activity_timeline": activity_timeline,
         "total_secs": total_secs,
         "total_display": f"{total_secs // 3600}h {(total_secs % 3600) // 60}m" if total_secs >= 3600 else f"{total_secs // 60}m",
         "capture_count": captures.count(),

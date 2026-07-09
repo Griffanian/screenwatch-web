@@ -147,3 +147,6 @@ CLOUDINARY_STORAGE = {
 
 # Screenwatch API key — set via env var in production
 SCREENWATCH_API_KEY = os.environ.get("SCREENWATCH_API_KEY", "dev-key-change-me")
+
+# Anthropic API key for Claude analysis
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
