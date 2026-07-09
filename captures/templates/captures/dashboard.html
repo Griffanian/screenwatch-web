@@ -40,6 +40,18 @@
     .app-bar:nth-child(4) .bar { background: var(--orange); }
     .app-bar:nth-child(n+5) .bar { background: var(--muted); }
 
+    .project-bar { position: relative; background: rgba(255,255,255,0.1) !important; overflow: hidden; }
+    .bar-active { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; }
+    .app-bar:nth-child(1) .bar-active { background: var(--accent); }
+    .app-bar:nth-child(2) .bar-active { background: var(--green); }
+    .app-bar:nth-child(3) .bar-active { background: var(--purple); }
+    .app-bar:nth-child(4) .bar-active { background: var(--orange); }
+    .app-bar:nth-child(n+5) .bar-active { background: var(--muted); }
+    .bar-label { position: relative; z-index: 1; }
+
+    .block-waiting { border-left: 3px solid var(--orange); opacity: 0.75; }
+    .waiting-badge { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.65rem; font-weight: 600; background: rgba(210, 153, 34, 0.2); color: var(--orange); text-transform: uppercase; margin-left: 0.5rem; }
+
     .timeline { border-left: 2px solid var(--border); margin-left: 1rem; padding-left: 1.5rem; }
     .block { position: relative; margin-bottom: 1rem; padding: 0.75rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
     .block::before { content: ''; position: absolute; left: -1.85rem; top: 1rem; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); }
@@ -102,7 +114,10 @@
       <div class="app-bar">
         <div class="name">{{ p.project }}</div>
         <div class="bar-wrap">
-          <div class="bar" style="width: {{ p.pct }}%;">{{ p.display }}</div>
+          <div class="bar project-bar" style="width: {{ p.pct }}%;">
+            <span class="bar-active" style="width: {{ p.active_pct }}%;"></span>
+            <span class="bar-label">{{ p.display }}</span>
+          </div>
         </div>
       </div>
       {% endfor %}
@@ -115,8 +130,8 @@
     <h2>What you were doing</h2>
     <div class="timeline">
       {% for a in activity_timeline %}
-      <div class="block">
-        <div class="time">{{ a.start|time:"H:i" }} — {{ a.end|time:"H:i" }} ({{ a.duration_display }})</div>
+      <div class="block{% if a.status == 'waiting' %} block-waiting{% endif %}">
+        <div class="time">{{ a.start|time:"H:i" }} — {{ a.end|time:"H:i" }} ({{ a.duration_display }}){% if a.status == "waiting" %} <span class="waiting-badge">waiting</span>{% endif %}</div>
         <div class="app-name">{{ a.project }}</div>
         <div class="window-name">{{ a.description }}</div>
       </div>

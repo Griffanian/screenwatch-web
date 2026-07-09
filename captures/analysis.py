@@ -38,11 +38,16 @@ user is clearly just killing time during a wait. Only use generic categories lik
 "YouTube", "Entertainment", "Browsing" when it's genuinely a break or unrelated.
 - "description": a concise sentence about what the user was doing. If multitasking, \
 mention both activities.
+- "status": either "active" or "waiting". Use "active" when the user is directly \
+working (coding, writing, reading docs, researching). Use "waiting" when the user is \
+killing time while something runs (watching Netflix during a deploy, scrolling social \
+media during a build, etc.). A genuine break with no surrounding work context is "active" \
+under its own project (e.g. Entertainment).
 
 Known projects so far: {known_projects}
 
 Respond with a JSON array, one object per NEW block only, in the same order. \
-Example: [{{"project": "Screenwatch", "description": "Checking deployment status on Render"}}]
+Example: [{{"project": "Screenwatch", "description": "Checking deployment status on Render", "status": "active"}}]
 Only return the JSON array, nothing else."""
 
 
@@ -166,6 +171,10 @@ def analyse_unprocessed():
         project_name = result.get("project", "Uncategorised")
         description = result.get("description", "")
 
+        status = result.get("status", "active")
+        if status not in ("active", "waiting"):
+            status = "active"
+
         project, _ = Project.objects.get_or_create(name=project_name)
         summary = ActivitySummary.objects.create(
             project=project,
@@ -173,6 +182,7 @@ def analyse_unprocessed():
             start_time=block["start"],
             end_time=block["end"],
             tick_count=block["ticks"],
+            status=status,
         )
         Capture.objects.filter(id__in=block["capture_ids"]).update(activity=summary)
         created += 1

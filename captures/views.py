@@ -208,24 +208,45 @@ def dashboard(request):
     project_totals = {}
     for a in activities:
         name = a.project.name if a.project else "Uncategorised"
-        project_totals[name] = project_totals.get(name, 0) + a.duration_secs
-    project_totals_sorted = sorted(project_totals.items(), key=lambda x: -x[1])
-    project_max = project_totals_sorted[0][1] if project_totals_sorted else 1
-    project_totals_display = [
-        {
+        if name not in project_totals:
+            project_totals[name] = {"active": 0, "waiting": 0}
+        project_totals[name][a.status] += a.duration_secs
+    project_totals_sorted = sorted(
+        project_totals.items(), key=lambda x: -(x[1]["active"] + x[1]["waiting"])
+    )
+    project_max = (
+        (project_totals_sorted[0][1]["active"] + project_totals_sorted[0][1]["waiting"])
+        if project_totals_sorted else 1
+    )
+
+    def _fmt(secs):
+        if secs >= 3600:
+            return f"{secs // 3600}h {(secs % 3600) // 60}m"
+        return f"{secs // 60}m {secs % 60}s"
+
+    project_totals_display = []
+    for name, times in project_totals_sorted:
+        total = times["active"] + times["waiting"]
+        active_pct = int(times["active"] / total * 100) if total else 100
+        display = _fmt(total)
+        if times["waiting"]:
+            display += f" ({_fmt(times['active'])} active, {_fmt(times['waiting'])} waiting)"
+        project_totals_display.append({
             "project": name,
-            "secs": secs,
-            "pct": max(int(secs / project_max * 100), 3),
-            "display": f"{secs // 3600}h {(secs % 3600) // 60}m" if secs >= 3600 else f"{secs // 60}m {secs % 60}s",
-        }
-        for name, secs in project_totals_sorted
-    ]
+            "secs": total,
+            "active_secs": times["active"],
+            "waiting_secs": times["waiting"],
+            "pct": max(int(total / project_max * 100), 3),
+            "active_pct": active_pct,
+            "display": display,
+        })
 
     # Activity timeline (analysed blocks with descriptions)
     activity_timeline = [
         {
             "project": a.project.name if a.project else "Uncategorised",
             "description": a.description,
+            "status": a.status,
             "start": a.start_time,
             "end": a.end_time,
             "duration_display": (

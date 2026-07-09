@@ -36,6 +36,13 @@ class Capture(models.Model):
 
 
 class ActivitySummary(models.Model):
+    ACTIVE = "active"
+    WAITING = "waiting"
+    STATUS_CHOICES = [
+        (ACTIVE, "Active"),
+        (WAITING, "Waiting"),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(
         Project, null=True, blank=True, on_delete=models.SET_NULL,
@@ -45,6 +52,9 @@ class ActivitySummary(models.Model):
     start_time = models.DateTimeField(db_index=True)
     end_time = models.DateTimeField(db_index=True)
     tick_count = models.PositiveIntegerField(default=0)
+    status = models.CharField(
+        max_length=10, choices=STATUS_CHOICES, default=ACTIVE,
+    )
 
     class Meta:
         ordering = ["-start_time"]
