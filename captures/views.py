@@ -270,5 +270,5 @@ def dashboard(request):
         "image_count": captures.filter(has_image=True).count(),
         "prev_day": prev_day,
         "next_day": next_day,
-        "devices": list(captures.values_list("device", flat=True).distinct()),
+        "devices": list(captures.values_list("device", flat=True).distinct().order_by("device")),
     })
