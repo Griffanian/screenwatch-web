@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Screenwatch — {{ day }}</title>
+  <style>
+    :root {
+      --bg: #0d1117; --surface: #161b22; --border: #30363d;
+      --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+      --green: #3fb950; --orange: #d29922; --purple: #bc8cff;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 1.5rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+    .header h1 { font-size: 1.4rem; font-weight: 600; }
+    .nav { display: flex; gap: 1rem; align-items: center; }
+    .nav a { padding: 0.4rem 0.8rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; }
+    .nav .current { background: var(--surface); font-weight: 600; }
+
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+    .stat .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat .value { font-size: 1.5rem; font-weight: 700; margin-top: 0.25rem; }
+
+    .section { margin-bottom: 2rem; }
+    .section h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.8rem; }
+
+    .app-bars { display: flex; flex-direction: column; gap: 0.5rem; }
+    .app-bar { display: flex; align-items: center; gap: 0.75rem; }
+    .app-bar .name { width: 200px; font-size: 0.85rem; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .app-bar .bar-wrap { flex: 1; height: 24px; background: var(--surface); border-radius: 4px; overflow: hidden; }
+    .app-bar .bar { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 0.5rem; font-size: 0.75rem; font-weight: 600; min-width: fit-content; }
+    .app-bar:nth-child(1) .bar { background: var(--accent); }
+    .app-bar:nth-child(2) .bar { background: var(--green); }
+    .app-bar:nth-child(3) .bar { background: var(--purple); }
+    .app-bar:nth-child(4) .bar { background: var(--orange); }
+    .app-bar:nth-child(n+5) .bar { background: var(--muted); }
+
+    .timeline { border-left: 2px solid var(--border); margin-left: 1rem; padding-left: 1.5rem; }
+    .block { position: relative; margin-bottom: 1rem; padding: 0.75rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+    .block::before { content: ''; position: absolute; left: -1.85rem; top: 1rem; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); }
+    .block.device-iphone::before { background: var(--green); }
+    .block .time { font-size: 0.75rem; color: var(--muted); }
+    .block .app-name { font-weight: 600; margin-top: 0.15rem; }
+    .block .window-name { font-size: 0.85rem; color: var(--muted); margin-top: 0.1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .block .meta { display: flex; gap: 1rem; margin-top: 0.35rem; font-size: 0.75rem; color: var(--muted); }
+    .block .device-badge { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+    .device-mac { background: #1f3a5f; color: var(--accent); }
+    .device-iphone { background: #1a3a2a; color: var(--green); }
+    .device-unknown { background: var(--border); color: var(--muted); }
+
+    .block .screenshot { margin-top: 0.5rem; }
+    .block .screenshot img { max-width: 100%; border-radius: 4px; cursor: pointer; }
+
+    .empty { text-align: center; padding: 3rem; color: var(--muted); }
+
+    /* Modal for full-size screenshots */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; cursor: zoom-out; justify-content: center; align-items: center; }
+    .modal-overlay.active { display: flex; }
+    .modal-overlay img { max-width: 95vw; max-height: 95vh; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Screenwatch</h1>
+    <div class="nav">
+      <a href="?date={{ prev_day }}">&larr; prev</a>
+      <span class="current">{{ day }}</span>
+      <a href="?date={{ next_day }}">next &rarr;</a>
+      <a href="?">today</a>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="label">Active time</div>
+      <div class="value">{{ total_display }}</div>
+    </div>
+    <div class="stat">
+      <div class="label">Data points</div>
+      <div class="value">{{ capture_count }}</div>
+    </div>
+    <div class="stat">
+      <div class="label">Screenshots</div>
+      <div class="value">{{ image_count }}</div>
+    </div>
+    <div class="stat">
+      <div class="label">Devices</div>
+      <div class="value">{{ devices|join:", "|default:"—" }}</div>
+    </div>
+  </div>
+
+  {% if app_totals %}
+  <div class="section">
+    <h2>Time by app</h2>
+    <div class="app-bars">
+      {% for a in app_totals %}
+      <div class="app-bar">
+        <div class="name">{{ a.app }}</div>
+        <div class="bar-wrap">
+          <div class="bar" style="width: {{ a.pct }}%;">{{ a.display }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="section">
+    <h2>Timeline</h2>
+    {% if blocks %}
+    <div class="timeline">
+      {% for b in blocks %}
+      <div class="block device-{{ b.device }}">
+        <div class="time">{{ b.start|time:"H:i:s" }} — {{ b.end|time:"H:i:s" }}</div>
+        <div class="app-name">
+          {{ b.app|default:"(unknown)" }}
+          <span class="device-badge device-{{ b.device }}">{{ b.device }}</span>
+          <span style="font-weight:normal; color: var(--muted); font-size: 0.85rem;">{{ b.duration_display }}</span>
+        </div>
+        {% if b.window %}<div class="window-name">{{ b.window }}</div>{% endif %}
+        {% if b.url %}<div class="meta"><span>{{ b.url }}</span></div>{% endif %}
+        {% if b.last_image %}
+        <div class="screenshot">
+          <img src="{{ b.last_image }}" alt="screenshot" loading="lazy" onclick="openModal(this.src)">
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty">No captures for this day.</div>
+    {% endif %}
+  </div>
+
+  <div class="modal-overlay" id="modal" onclick="this.classList.remove('active')">
+    <img id="modal-img" src="" alt="full screenshot">
+  </div>
+
+  <script>
+    function openModal(src) {
+      document.getElementById('modal-img').src = src;
+      document.getElementById('modal').classList.add('active');
+    }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') document.getElementById('modal').classList.remove('active');
+    });
+  </script>
+</body>
+</html>

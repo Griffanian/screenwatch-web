@@ -1,0 +1,26 @@
+databases:
+  - name: screenwatch-db
+    plan: free
+    databaseName: screenwatch
+    ipAllowList: []
+
+services:
+  - type: web
+    name: screenwatch-web
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn screenwatch_web.wsgi:application"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: screenwatch-db
+          property: connectionString
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: SCREENWATCH_API_KEY
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.12.3"

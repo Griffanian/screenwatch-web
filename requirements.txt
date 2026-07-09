@@ -1,0 +1,6 @@
+django>=5.0
+pillow
+gunicorn
+whitenoise[brotli]
+dj-database-url
+psycopg2-binary
