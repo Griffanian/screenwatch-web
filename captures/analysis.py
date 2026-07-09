@@ -22,15 +22,22 @@ but a YouTube video watched right after editing SwiftUI code for a mindfulness a
 might be research for that app. Use the surrounding context — what came before and \
 after — to make smart judgements.
 
+MULTITASKING: People often do something light (Netflix, YouTube, social media) while \
+waiting for something work-related (deploy, build, download, install). If a short \
+entertainment block sits between two blocks of the same project, the user is probably \
+still working on that project — just filling dead time. Assign the project to the \
+actual work, and note the multitasking in the description \
+(e.g. "Watching Netflix while waiting for Render deploy to finish").
+
 Recent activity (already categorised, for context):
 {recent_context}
 
 For each NEW block (marked with >>), return:
-- "project": a short project or category name. Use consistent names — reuse existing \
-project names when the activity clearly belongs to one. Only use generic categories \
-like "YouTube", "Browsing", "Entertainment" when the activity genuinely isn't related \
-to any project.
-- "description": a concise sentence about what the user was doing.
+- "project": the primary project or category. Assign to the real work project if the \
+user is clearly just killing time during a wait. Only use generic categories like \
+"YouTube", "Entertainment", "Browsing" when it's genuinely a break or unrelated.
+- "description": a concise sentence about what the user was doing. If multitasking, \
+mention both activities.
 
 Known projects so far: {known_projects}
 
