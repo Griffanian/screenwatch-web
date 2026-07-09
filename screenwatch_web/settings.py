@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "cloudinary_storage",
+    "cloudinary",
     "captures",
 ]
 
@@ -133,9 +135,15 @@ STORAGES = {
     },
 }
 
-# Media files (uploaded screenshots)
-MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+# Media files (uploaded screenshots) — stored in Cloudinary
+MEDIA_URL = "/media/"
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": os.environ.get("CLOUDINARY_CLOUD_NAME", "drmpcjly"),
+    "API_KEY": os.environ.get("CLOUDINARY_API_KEY", "918842319149244"),
+    "API_SECRET": os.environ.get("CLOUDINARY_API_SECRET", ""),
+}
 
 # Screenwatch API key — set via env var in production
 SCREENWATCH_API_KEY = os.environ.get("SCREENWATCH_API_KEY", "dev-key-change-me")
